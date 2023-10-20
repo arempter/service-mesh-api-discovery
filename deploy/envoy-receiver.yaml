@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: envoy-receiver
+  name: envoy-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: envoy-receiver
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: envoy-receiver
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - image: receiver:latest
+        name: receiver
+        imagePullPolicy: Never
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy-receiver-svc
+spec:
+  selector:
+    app: envoy-receiver
+  ports:
+    - protocol: TCP
+      port: 65000
+      targetPort: 65000
