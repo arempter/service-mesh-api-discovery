@@ -35,5 +35,10 @@ spec:
     app: envoy-receiver
   ports:
     - protocol: TCP
+      name: "grpc"
       port: 65000
       targetPort: 65000
+    - protocol: TCP
+      name: "rest"
+      port: 8080
+      targetPort: 8080

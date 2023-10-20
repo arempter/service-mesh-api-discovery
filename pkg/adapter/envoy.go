@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"service-mesh-api-discovery/pkg/k8s"
+	"service-mesh-api-discovery/pkg/storage"
 
 	accesslogv3 "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	"golang.org/x/exp/slices"
@@ -12,14 +13,14 @@ import (
 
 // envoyAdapter implements accesslogv3.AccessLogServiceServer
 type envoyAdapter struct {
-	k8s            k8s.K8sCollector
-	discoveredAPIs map[string][]string // structure to store discovered api paths
+	k8s        k8s.K8sCollector
+	inMemStore storage.InMemStore
 }
 
-func NewAdapter(collector k8s.K8sCollector) accesslogv3.AccessLogServiceServer {
+func NewAdapter(collector k8s.K8sCollector, inMemStore storage.InMemStore) accesslogv3.AccessLogServiceServer {
 	return &envoyAdapter{
-		k8s:            collector,
-		discoveredAPIs: make(map[string][]string),
+		k8s:        collector,
+		inMemStore: inMemStore,
 	}
 }
 
@@ -55,18 +56,15 @@ func (a *envoyAdapter) process(httpLogs *accesslogv3.StreamAccessLogsMessage_HTT
 
 		// perhaps this could be tighten up to more realistic conditions
 		if dest != "" && respCode != http.StatusNotFound && respCode != http.StatusGatewayTimeout {
-			api, ok := a.discoveredAPIs[dest]
+			apiEndpoints, _ := a.inMemStore.GeEndpointstFor(dest)
 			apiPath := e.Request.GetPath()
 
-			if slices.Contains(api, apiPath) {
+			if slices.Contains(apiEndpoints, apiPath) {
 				continue
 			}
 
 			slog.Info("found new API endpoint", "name", dest, "endpoint", apiPath)
-			if !ok {
-				a.discoveredAPIs[dest] = []string{apiPath}
-			}
-			a.discoveredAPIs[dest] = append(api, apiPath)
+			a.inMemStore.Store(dest, apiPath)
 		}
 	}
 }

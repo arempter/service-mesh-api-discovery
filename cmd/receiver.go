@@ -1,13 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"service-mesh-api-discovery/pkg/adapter"
 	"service-mesh-api-discovery/pkg/k8s"
+	"service-mesh-api-discovery/pkg/storage"
 	"syscall"
 	"time"
 
@@ -31,8 +34,12 @@ func main() {
 	// k8s collector
 	collector := k8s.NewK8sCollector(k8s.Clientset())
 
+	// storage dependency and http rest server
+	storage := storage.NewInMemStore()
+	go setupHttpServer(storage)
+
 	// register logs recveiver
-	accesslogv3.RegisterAccessLogServiceServer(srv, adapter.NewAdapter(collector))
+	accesslogv3.RegisterAccessLogServiceServer(srv, adapter.NewAdapter(collector, storage))
 
 	go func() {
 		slog.Info("starting envoy log receiver on", "port", *port)
@@ -59,4 +66,23 @@ func handleShutdown(stop chan struct{}) {
 	// poors man grace period
 	time.Sleep(3 * time.Second)
 	os.Exit(0)
+}
+
+func setupHttpServer(inMemStore storage.InMemStore) {
+	mux := http.NewServeMux()
+	mux.Handle("/api/v1/endpoints", apiEndpointHandler(inMemStore))
+
+	if err := http.ListenAndServe("0.0.0.0:8080", mux); err != nil {
+		slog.Error("failed to start api endpoints rest server", "err", err.Error())
+	}
+}
+
+func apiEndpointHandler(inMemStore storage.InMemStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		js, err := json.Marshal(inMemStore.Get())
+		if err != nil {
+			slog.Error("failed to serialize response", "err", err.Error())
+		}
+		w.Write(js)
+	}
 }
