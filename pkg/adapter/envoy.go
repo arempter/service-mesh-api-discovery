@@ -13,7 +13,7 @@ import (
 // envoyAdapter implements accesslogv3.AccessLogServiceServer
 type envoyAdapter struct {
 	k8s            k8s.K8sCollector
-	discoveredAPIs map[string][]string // structore to store discovered api paths
+	discoveredAPIs map[string][]string // structure to store discovered api paths
 }
 
 func NewAdapter(collector k8s.K8sCollector) accesslogv3.AccessLogServiceServer {

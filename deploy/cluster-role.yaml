@@ -6,17 +6,8 @@ metadata:
     app.kubernetes.io/name: envoy-receiver
 rules:
   - apiGroups: [""]
-    resources: ["pods", "nodes", "events", "services", "secrets", "configmaps", "persistentvolumeclaims", "persistentvolumes", "endpoints"]
+    resources: ["pods", "endpoints"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["extensions", "apps"]
     resources: ["replicasets", "deployments", "daemonsets", "statefulsets"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["metrics.k8s.io"]
-    resources: ["pods"]
-    verbs: ["get", "list"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["batch"]
-    resources: ["cronjobs", "jobs"]
     verbs: ["get", "list", "watch"]
