@@ -16,12 +16,9 @@ jobs:
             echo "my artifact file" > /tmp/artifact-1.txt
             mkdir /tmp/artifacts;
             echo "my artifact files in a dir" >> /tmp/artifact-1.txt
-      - run:
-          name: Compress Artifacts
-          command: tar -cvzf tar -cvzf myartifact.tar /tmp  
       - store_artifacts:
-          path: /tmp/myartifact.tar
-          destination: log.tar
+          path: /tmp/artifact-1.txt
+          destination: log.1
       - run:
           name: Download Go modules
           command: go mod download
